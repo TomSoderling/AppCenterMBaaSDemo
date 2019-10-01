@@ -2,11 +2,11 @@
 
 Demo Xamarin.Forms app showing the power of Visual Studio App Center Data & Auth to build a Mobile Backend as a Service (MBaaS)
 
-See repo for slides that go along with the app
+See repo for slides that go along with the app  
 
 
 
-### Using this sample app
+## Using this sample app
 You'll need to provide your own App Center app secrets. You generate them by creating new iOS and/or Android apps in App Center. Once you have them:  
  - Add your secrets to the top of the App.xaml.cs which will be used in the AppCenter.Start() call
  - Add your iOS app secret to the CFBundleURLTypes array in the Info.plist file:  
