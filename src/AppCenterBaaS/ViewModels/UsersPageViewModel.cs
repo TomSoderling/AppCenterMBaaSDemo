@@ -21,6 +21,18 @@ namespace AppCenterBaaS.ViewModels
             GetUserDocumentCommand = new Command<User>(async (User user) => await GetUserByID(user));
             UpsertUserCommand = new Command(async () => await UpsertUser());
             DeleteUserCommand = new Command<User>(async (User user) => await DeleteUser(user));
+
+
+            // Get notified of a pending operation being executed when the device goes from offline to online
+            Data.RemoteOperationCompleted += (sender, eventArgs) =>
+            {
+                var msg = $"Remote operation completed. {eventArgs.Operation} on {eventArgs.DocumentMetadata.Id}";
+
+                if (eventArgs.Error != null)
+                    msg += $". Error: {eventArgs.Error.Message}";
+
+                StatusMessage = msg;
+            };
         }
 
         private User lastSelectedUser;
@@ -87,7 +99,7 @@ namespace AppCenterBaaS.ViewModels
             try
             {
                 // Optional time-to-live parameter. Locally cached documents will expire afte 60 seconds.
-                var ttl = new TimeSpan(0, 0, 60);
+                var ttl = new TimeSpan(0, 0, 60, 0);
 
                 var doc = await Data.CreateAsync(user.Id.ToString(), user, DefaultPartitions.UserDocuments, new WriteOptions(ttl));
 
