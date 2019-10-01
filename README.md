@@ -13,7 +13,7 @@ You'll need to provide your own App Center app secrets. You generate them by cre
  ```
 <key>CFBundleURLSchemes</key>
  <array>
-  <string>msal9ebe1304-7b23-4d19-abb6-3dfc71ceed4d</string>
+  <string>msal[your guid goes here]</string>
  </array>
 ```
  - Add your Android app secret to the this string in the AndroidManifest.xml file, intent-filter node:  
