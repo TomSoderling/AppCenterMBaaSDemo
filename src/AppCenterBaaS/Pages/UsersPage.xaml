@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AppCenterBaaS"
+             xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
+             BackgroundColor="LimeGreen"
+             x:Name="contentPage"
+             x:Class="AppCenterBaaS.Pages.UsersPage">
+
+    <ContentPage.BindingContext>
+        <vm:UsersPageViewModel />
+    </ContentPage.BindingContext>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="EntryStyle" TargetType="Entry">
+                <Setter Property="Margin" Value="10, 5, 10, 0" />
+                <Setter Property="HeightRequest" Value="40" />
+            </Style>
+
+            <local:SelectedItemEventArgsToSelectedItemConverter x:Key="SelectedItemConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.Content>
+        <ListView BackgroundColor="LimeGreen"
+                  ItemsSource="{Binding UserDocuments}">
+            <ListView.Header>
+                <StackLayout>
+                    <Label Text="User Information"
+                           Margin="10, 10, 10, 0" />
+
+                    <Entry Placeholder="Name"
+                           Text="{Binding Name}"
+                           Style="{StaticResource EntryStyle}" />
+
+                    <Entry Placeholder="Email"
+                           Text="{Binding Email}"
+                           Style="{StaticResource EntryStyle}" />
+
+                    <Entry Placeholder="Phone Number"
+                           Text="{Binding PhoneNumber}"
+                           Style="{StaticResource EntryStyle}" />
+
+                    <Grid ColumnSpacing="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Text="Create new User"
+                                BackgroundColor="Blue"
+                                TextColor="White"
+                                Margin="10, 5, 5, 0"
+                                Command="{Binding CreateNewUserCommand}"
+                                Grid.Row="0"
+                                Grid.Column="0"/>
+
+                        <Button Text="Upsert User"
+                                BackgroundColor="Blue"
+                                TextColor="White"
+                                Margin="5, 5, 10, 0"
+                                Command="{Binding UpsertUserCommand}"
+                                Grid.Row="0"
+                                Grid.Column="1"/>
+
+                        <Button Text="Get UserDocuments"
+                                BackgroundColor="Blue"
+                                TextColor="White"
+                                Margin="10, 5, 5, 0"
+                                Command="{Binding GetUserDocumentsCommand}"
+                                Grid.Row="1"
+                                Grid.Column="0"/>
+                    </Grid>
+
+                    <Label Text="{Binding StatusMessage}"
+                           Margin="10, 5, 10, 0" />
+
+                </StackLayout>
+            </ListView.Header>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell Text="{Binding Name}"
+                              Detail="{Binding PhoneNumber}">
+                        <TextCell.ContextActions>
+                            <MenuItem Text="Delete"
+                                      Command="{Binding Source={x:Reference contentPage}, Path=BindingContext.DeleteUserCommand}"
+                                      CommandParameter="{Binding .}"
+                                      IsDestructive="True" />
+                        </TextCell.ContextActions>
+                    </TextCell>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+
+            <!-- Use XF behavior to convert event to command -->
+            <ListView.Behaviors>
+                <local:EventToCommandBehavior EventName="ItemSelected"
+                                              Command="{Binding GetUserDocumentCommand}"
+                                              Converter="{StaticResource SelectedItemConverter}" />
+            </ListView.Behaviors>
+        </ListView>
+    </ContentPage.Content>
+</ContentPage>

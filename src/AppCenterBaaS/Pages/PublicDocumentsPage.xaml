@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AppCenterBaaS"
+             xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
+             x:Class="AppCenterBaaS.Pages.PublicDocumentsPage"
+             BackgroundColor="#FFFF66">
+
+    <ContentPage.BindingContext>
+        <vm:PublicDocumentsPageViewModel />
+    </ContentPage.BindingContext>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <local:SelectedItemEventArgsToSelectedItemConverter x:Key="SelectedItemConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ContentPage.Content>
+
+        <ListView BackgroundColor="#FFFF66"
+                  ItemsSource="{Binding PublicDocuments}">
+            <ListView.Header>
+                <StackLayout VerticalOptions="Center">
+                    <Button Text="Get public AppDocuments"
+                            BackgroundColor="Blue"
+                            TextColor="White"
+                            Margin="10, 15, 10, 0"
+                            VerticalOptions="Center"
+                            Command="{Binding GetAllPublicAppDocumentsCommand}" />
+                    <Editor Text="{Binding JsonDoc}"
+                            AutoSize="TextChanges"
+                            IsReadOnly="True"
+                            Margin="10, 0, 10, 0" />
+                    <Label Text="{Binding StatusMessage}"
+                           Margin="10, 0, 10, 5" />
+                </StackLayout>
+            </ListView.Header>
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <TextCell Text="{Binding Item1}" Detail="{Binding Item2}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+
+            <ListView.Behaviors>
+                <local:EventToCommandBehavior EventName="ItemSelected"
+                                              Command="{Binding GetPublicAppDocumentCommand}"
+                                              Converter="{StaticResource SelectedItemConverter}" />
+            </ListView.Behaviors>
+        </ListView>
+
+    </ContentPage.Content>
+</ContentPage>

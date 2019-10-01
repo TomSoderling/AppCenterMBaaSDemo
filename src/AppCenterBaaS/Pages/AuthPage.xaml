@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
+             mc:Ignorable="d"
+             BackgroundColor="DeepSkyBlue"
+             x:Class="AppCenterBaaS.Pages.AuthPage">
+
+    <!-- associate the ViewModel with this View -->
+    <ContentPage.BindingContext>
+        <vm:AuthPageViewModel />
+    </ContentPage.BindingContext>
+
+    <StackLayout VerticalOptions="Center">
+
+        <Label Text="{Binding StatusMessage}"
+               Margin="10, 0, 10, 0" />
+
+        <Grid Margin="10, 10, 10, 5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Label Text="Account ID:"           Grid.Row="0" Grid.Column="0" HorizontalTextAlignment="End" />
+            <Label Text="{Binding AccountID}"   Grid.Row="0" Grid.Column="1" HorizontalTextAlignment="Start" FontSize="Small" VerticalTextAlignment="Center" />
+
+            <Label Text="Name:"                 Grid.Row="1" Grid.Column="0" HorizontalTextAlignment="End" />
+            <Label Text="{Binding Name}"        Grid.Row="1" Grid.Column="1" HorizontalTextAlignment="Start" />
+
+            <Label Text="Email:"                Grid.Row="2" Grid.Column="0" HorizontalTextAlignment="End" />
+            <Label Text="{Binding Email}"       Grid.Row="2" Grid.Column="1" HorizontalTextAlignment="Start" />
+
+            <Label Text="Auth Time:"            Grid.Row="3" Grid.Column="0" HorizontalTextAlignment="End" />
+            <Label Text="{Binding AuthTime}"    Grid.Row="3" Grid.Column="1" HorizontalTextAlignment="Start" />
+
+            <Label Text="Expires:"              Grid.Row="4" Grid.Column="0" HorizontalTextAlignment="End" />
+            <Label Text="{Binding Expires}"     Grid.Row="4" Grid.Column="1" HorizontalTextAlignment="Start" />
+        </Grid>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Button Text="Generate Test Crash"
+                BackgroundColor="Red"
+                TextColor="White"
+                Margin="10, 10, 5, 0"
+                Command="{Binding CrashCommand}"
+                Grid.Row="0" Grid.Column="0" />
+            <Button Text="Generate Test Error"
+                BackgroundColor="Orange"
+                TextColor="White"
+                Margin="5, 10, 10, 0"
+                Command="{Binding ErrorCommand}"
+                Grid.Row="0" Grid.Column="1" />
+
+            <Button Text="Sign Out"
+                BackgroundColor="Blue"
+                TextColor="White"
+                Margin="10, 10, 5, 0"
+                Command="{Binding SignOutCommand}"
+                Grid.Row="1" Grid.Column="0" />
+            <Button Text="Sign In"
+                BackgroundColor="Blue"
+                TextColor="White"
+                Margin="5, 10, 10, 0"
+                Command="{Binding SignInCommand}"
+                Grid.Row="1" Grid.Column="1" />
+        </Grid>
+
+        
+
+    </StackLayout>
+
+</ContentPage>
