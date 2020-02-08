@@ -79,6 +79,9 @@
     <PackageReference Include="Microsoft.AppCenter">
       <Version>2.6.4</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Client">
+      <Version>4.8.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MainActivity.cs" />

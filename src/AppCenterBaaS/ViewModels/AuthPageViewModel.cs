@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Microsoft.AppCenter;
 using Microsoft.AppCenter.Auth;
 using Microsoft.AppCenter.Crashes;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using Xamarin.Essentials;
 using Xamarin.Forms;
@@ -20,10 +21,10 @@ namespace AppCenterBaaS.ViewModels
         public AuthPageViewModel()
         {
             SignInCommand = new Command(async () => await SignIn());
-            SignOutCommand = new Command(() => SignOut());
+            SignOutCommand = new Command(async () => await SignOut());
             CrashCommand = new Command(() => GenerateTestCrash());
             ErrorCommand = new Command(() => GenerateTestError());
-            SetUserIDCommand = new Command(() => SetUserID());
+            SetUserIDCommand = new Command(() => SetUserIDForErrorReporting());
 
             LoadInfoFromDevicePreferences();
         }
@@ -108,16 +109,55 @@ namespace AppCenterBaaS.ViewModels
 
             try
             {
-                UserInformation userInfo = await Auth.SignInAsync();
+                //UserInformation userInfo = await Auth.SignInAsync();
+
+                AuthenticationResult authResult = null;
+                var accounts = await App.PCA.GetAccountsAsync(); // get any avail. accounts in the user token cache for this app
+
+                try
+                {
+                    authResult = await App.PCA.AcquireTokenSilent(App.Scopes, accounts.FirstOrDefault()).ExecuteAsync();
+                }
+                catch (MsalUiRequiredException ex)
+                {
+                    try
+                    {
+                        // Log in interactively
+                        authResult = await App.PCA.AcquireTokenInteractive(App.Scopes).
+                                                    WithParentActivityOrWindow(App.ParentWindow).
+                                                    ExecuteAsync();
+                    }
+                    catch (Exception ex2)
+                    {
+                        statusMessage = $"Acquire token interactive failed. See exception message for details: {ex2.Message}";
+                    }
+                }
+
+                if (authResult != null)
+                {
+                    StatusMessage = $"Signed in!";
+
+                    ReadClaimsFromJWTToken(authResult.IdToken);
+
+                    SaveInfoToDevicePreferences();
+
+                    // TODO
+                    //SetUserIDForErrorReporting();
+                }
+                else
+                {
+                    StatusMessage = $"Unable to sign in";
+                }
 
                 // Sign-in succeeded
-                StatusMessage = $"Signed in!";
-                AccountID = userInfo?.AccountId;
+                //StatusMessage = $"Signed in!";
+                //AccountID = userInfo?.AccountId;
 
-                GetUserProfileInformation(userInfo);
-                SaveInfoToDevicePreferences();
+                //GetUserProfileInformation(userInfo);
+                //SaveInfoToDevicePreferences();
 
-                SetUserID();
+                //SetUserID();
+
             }
             catch (Exception ex)
             {
@@ -126,20 +166,27 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
-        private void SignOut()
+        private async Task SignOut()
         {
             StatusMessage = string.Empty;
 
             try
             {
-                Auth.SignOut();
+                //Auth.SignOut();
+
+                var accounts = await App.PCA.GetAccountsAsync();
+
+                while (accounts.Any())
+                {
+                    await App.PCA.RemoveAsync(accounts.FirstOrDefault());
+                    accounts = await App.PCA.GetAccountsAsync();
+                }
 
                 StatusMessage = $"Signed out";
                 AccountID = Email = Name = AuthTime = Expires = string.Empty;
                 Preferences.Clear();
-
-                // Unset user ID since we don't have one to correlate crashes and errors to
-                SetUserID();
+                
+                SetUserIDForErrorReporting(); // Reset user ID to blacnk since we don't have one to correlate crashes and errors to
             }
             catch (Exception ex)
             {
@@ -166,7 +213,7 @@ namespace AppCenterBaaS.ViewModels
             StatusMessage = $"Test error generated at {DateTime.Now}";
         }
 
-        private void SetUserID()
+        private void SetUserIDForErrorReporting()
         {
             // Set user ID to correlate crashes and errors to this authenticated user
             AppCenter.SetUserId(Email);
@@ -176,13 +223,14 @@ namespace AppCenterBaaS.ViewModels
         // Decode the raw token string to read the claims
         // Claims are values about the user returned to the application in the token.
         // These are enabled in Azure AD B2C > User flow > Application claims
-        private void GetUserProfileInformation(UserInformation userInfo)
+        private void ReadClaimsFromJWTToken(string IdToken)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
 
             try
             {
-                var jwToken = tokenHandler.ReadJwtToken(userInfo.IdToken);
+                //var jwToken = tokenHandler.ReadJwtToken(userInfo.IdToken);
+                var jwToken = tokenHandler.ReadJwtToken(IdToken);
 
                 // Get display name
                 var displayName = jwToken.Claims.FirstOrDefault(t => t.Type == "name")?.Value;
@@ -213,8 +261,6 @@ namespace AppCenterBaaS.ViewModels
                     var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                     Expires = epoch.AddSeconds(Convert.ToDouble(exp)).ToLocalTime().ToString();
                 }
-
-
             }
             catch (ArgumentException)
             {
