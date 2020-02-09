@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Microsoft.AppCenter.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xamarin.Forms;
@@ -51,50 +49,50 @@ namespace AppCenterBaaS.ViewModels
 
         private async Task GetAllPublicAppDocuments()
         {
-            StatusMessage = string.Empty;
-            JsonDoc = string.Empty;
+            //StatusMessage = string.Empty;
+            //JsonDoc = string.Empty;
 
-            try
-            {
-                var paginatedDocs = await Data.ListAsync<object>(DefaultPartitions.AppDocuments);
+            //try
+            //{
+            //    var paginatedDocs = await Data.ListAsync<object>(DefaultPartitions.AppDocuments);
 
-                PublicDocuments.Clear();
-                foreach (var doc in paginatedDocs)
-                {
-                    var lastUpdated = $"last updated: {doc.LastUpdatedDate.ToLocalTime().ToString()}";
-                    PublicDocuments.Add(new Tuple<string, string>(doc.Id, lastUpdated));
-                }
+            //    PublicDocuments.Clear();
+            //    foreach (var doc in paginatedDocs)
+            //    {
+            //        var lastUpdated = $"last updated: {doc.LastUpdatedDate.ToLocalTime().ToString()}";
+            //        PublicDocuments.Add(new Tuple<string, string>(doc.Id, lastUpdated));
+            //    }
 
-                StatusMessage = "Documents fetched";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = ex.Message;
-            }
+            //    StatusMessage = "Documents fetched";
+            //}
+            //catch (Exception ex)
+            //{
+            //    StatusMessage = ex.Message;
+            //}
         }
 
         private async Task GetPublicAppDocumentByID(object selected)
         {
-            StatusMessage = string.Empty;
+            //StatusMessage = string.Empty;
 
-            if (!(selected is Tuple<string, string> selectedDoc))
-                return;
+            //if (!(selected is Tuple<string, string> selectedDoc))
+            //    return;
 
-            try
-            {
-                var doc = await Data.ReadAsync<object>(selectedDoc.Item1, DefaultPartitions.AppDocuments);
+            //try
+            //{
+            //    var doc = await Data.ReadAsync<object>(selectedDoc.Item1, DefaultPartitions.AppDocuments);
 
-                // format the json for display
-                var parsedJson = JToken.Parse(doc.JsonValue);
-                JsonDoc = parsedJson.ToString(Formatting.Indented);
+            //    // format the json for display
+            //    var parsedJson = JToken.Parse(doc.JsonValue);
+            //    JsonDoc = parsedJson.ToString(Formatting.Indented);
 
-                var cacheOrService = doc.IsFromDeviceCache ? "device cache" : "App Center backend";
-                StatusMessage = $"Document fetched from {cacheOrService}";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = ex.Message;
-            }
+            //    var cacheOrService = doc.IsFromDeviceCache ? "device cache" : "App Center backend";
+            //    StatusMessage = $"Document fetched from {cacheOrService}";
+            //}
+            //catch (Exception ex)
+            //{
+            //    StatusMessage = ex.Message;
+            //}
         }
 
 

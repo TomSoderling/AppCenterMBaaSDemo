@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using AppCenterBaaS.ViewModels;
 using Xamarin.Forms;
 
 namespace AppCenterBaaS.Pages
@@ -12,13 +11,6 @@ namespace AppCenterBaaS.Pages
         public AuthPage()
         {
             InitializeComponent();
-        }
-
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-
-            ((AuthPageViewModel)this.BindingContext).SetUserIDCommand.Execute(null);
         }
     }
 }

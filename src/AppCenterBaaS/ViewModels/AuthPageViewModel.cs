@@ -7,10 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.AppCenter;
-using Microsoft.AppCenter.Auth;
 using Microsoft.AppCenter.Crashes;
 using Microsoft.Identity.Client;
-using Newtonsoft.Json.Linq;
 using Xamarin.Essentials;
 using Xamarin.Forms;
 
@@ -24,7 +22,6 @@ namespace AppCenterBaaS.ViewModels
             SignOutCommand = new Command(async () => await SignOut());
             CrashCommand = new Command(() => GenerateTestCrash());
             ErrorCommand = new Command(() => GenerateTestError());
-            SetUserIDCommand = new Command(() => SetUserIDForErrorReporting());
 
             LoadInfoFromDevicePreferences();
         }
@@ -100,7 +97,6 @@ namespace AppCenterBaaS.ViewModels
         public ICommand SignOutCommand { get; private set; }
         public ICommand CrashCommand { get; private set; }
         public ICommand ErrorCommand { get; private set; }
-        public ICommand SetUserIDCommand { get; private set; }
 
 
         private async Task SignIn()
@@ -116,20 +112,22 @@ namespace AppCenterBaaS.ViewModels
 
                 try
                 {
+                    // First, try to get a previously cached token
                     authResult = await App.PCA.AcquireTokenSilent(App.Scopes, accounts.FirstOrDefault()).ExecuteAsync();
                 }
                 catch (MsalUiRequiredException ex)
                 {
                     try
                     {
-                        // Log in interactively
+                        // Log in interactively. Gets the token through an interactive process that prompts the user for credentials through a browser or pop-up window
                         authResult = await App.PCA.AcquireTokenInteractive(App.Scopes).
+                                                    WithAccount(GetAccountByPolicy(accounts, App.PolicySignUpSignIn)).
                                                     WithParentActivityOrWindow(App.ParentWindow).
                                                     ExecuteAsync();
                     }
                     catch (Exception ex2)
                     {
-                        statusMessage = $"Acquire token interactive failed. See exception message for details: {ex2.Message}";
+                        StatusMessage = $"Acquire token interactive failed. See exception message for details: {ex2.Message}";
                     }
                 }
 
@@ -137,27 +135,13 @@ namespace AppCenterBaaS.ViewModels
                 {
                     StatusMessage = $"Signed in!";
 
+                    AccountID = authResult.UniqueId;
                     ReadClaimsFromJWTToken(authResult.IdToken);
 
                     SaveInfoToDevicePreferences();
-
-                    // TODO
-                    //SetUserIDForErrorReporting();
+                    
+                    AppCenter.SetUserId(Email); // Set user ID to correlate crashes and errors to this authenticated user
                 }
-                else
-                {
-                    StatusMessage = $"Unable to sign in";
-                }
-
-                // Sign-in succeeded
-                //StatusMessage = $"Signed in!";
-                //AccountID = userInfo?.AccountId;
-
-                //GetUserProfileInformation(userInfo);
-                //SaveInfoToDevicePreferences();
-
-                //SetUserID();
-
             }
             catch (Exception ex)
             {
@@ -185,8 +169,8 @@ namespace AppCenterBaaS.ViewModels
                 StatusMessage = $"Signed out";
                 AccountID = Email = Name = AuthTime = Expires = string.Empty;
                 Preferences.Clear();
-                
-                SetUserIDForErrorReporting(); // Reset user ID to blacnk since we don't have one to correlate crashes and errors to
+
+                AppCenter.SetUserId(string.Empty); // Reset user ID to blacnk since we don't have one to correlate crashes and errors to
             }
             catch (Exception ex)
             {
@@ -205,20 +189,13 @@ namespace AppCenterBaaS.ViewModels
         {
             var moreInfo = new Dictionary<string, string>
             {
-                { "additionalInfo", "More info about this handled exception or error" }
+                { "additionalInfo", "More info about this handled exception or error goes here" }
             };
 
             Crashes.TrackError(new NullReferenceException("Test NRE"), moreInfo);
 
             StatusMessage = $"Test error generated at {DateTime.Now}";
         }
-
-        private void SetUserIDForErrorReporting()
-        {
-            // Set user ID to correlate crashes and errors to this authenticated user
-            AppCenter.SetUserId(Email);
-        }
-
 
         // Decode the raw token string to read the claims
         // Claims are values about the user returned to the application in the token.
@@ -229,7 +206,6 @@ namespace AppCenterBaaS.ViewModels
 
             try
             {
-                //var jwToken = tokenHandler.ReadJwtToken(userInfo.IdToken);
                 var jwToken = tokenHandler.ReadJwtToken(IdToken);
 
                 // Get display name
@@ -286,6 +262,18 @@ namespace AppCenterBaaS.ViewModels
             Expires = Preferences.Get("expires", string.Empty);
         }
 
+        private IAccount GetAccountByPolicy(IEnumerable<IAccount> accounts, string policy)
+        {
+            foreach (var account in accounts)
+            {
+                string userIdentifier = account.HomeAccountId.ObjectId.Split('.')[0];
+
+                if (userIdentifier.EndsWith(policy.ToLower()))
+                    return account;
+            }
+
+            return null;
+        }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
