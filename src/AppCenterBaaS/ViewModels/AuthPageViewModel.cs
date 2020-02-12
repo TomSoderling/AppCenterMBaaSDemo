@@ -133,14 +133,14 @@ namespace AppCenterBaaS.ViewModels
 
                 if (authResult != null)
                 {
-                    StatusMessage = $"Signed in!";
+                    StatusMessage = $"Signed in! 🎉";
 
                     AccountID = authResult.UniqueId;
                     ReadClaimsFromJWTToken(authResult.IdToken);
 
                     SaveInfoToDevicePreferences();
                     
-                    AppCenter.SetUserId(Email); // Set user ID to correlate crashes and errors to this authenticated user
+                    AppCenter.SetUserId(Email); // Set user ID to correlate crashes and errors to this authenticated user 😎
                 }
             }
             catch (Exception ex)

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xamarin.Forms;
@@ -47,6 +49,12 @@ namespace AppCenterBaaS.ViewModels
         public ObservableCollection<Tuple<string, string>> PublicDocuments { get; set; } = new ObservableCollection<Tuple<string, string>>();
 
 
+        const string accountURL = @"https://cosmos-db-demo-app-1.documents.azure.com:443/";
+        const string accountKey = @"TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
+        const string databaseId = @"ToDoList";
+        const string collectionId = @"Items";
+        public CosmosClient client;
+
         private async Task GetAllPublicAppDocuments()
         {
             //StatusMessage = string.Empty;
@@ -69,6 +77,39 @@ namespace AppCenterBaaS.ViewModels
             //{
             //    StatusMessage = ex.Message;
             //}
+
+
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(accountURL, accountKey))
+                {
+                    // Create new database
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId);
+
+                    // Create new container
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(collectionId, "/_partitionKey");
+
+                    var sqlQueryText = "SELECT * FROM c";
+                    var queryDefinition = new QueryDefinition(sqlQueryText);
+                    var queryResultSetIterator = container.Container.GetItemQueryIterator<TodoItem>(queryDefinition);
+
+                    var items = new List<TodoItem>();
+
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (TodoItem item in currentResultSet)
+                        {
+                            items.Add(item);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
         }
 
         private async Task GetPublicAppDocumentByID(object selected)
@@ -101,6 +142,23 @@ namespace AppCenterBaaS.ViewModels
         protected virtual void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+
+
+        public class TodoItem
+        {
+            [JsonProperty(PropertyName = "id")]
+            public string Id { get; set; }
+
+            [JsonProperty(PropertyName = "text")]
+            public string Text { get; set; }
+
+            [JsonProperty(PropertyName = "complete")]
+            public bool Complete { get; set; }
+
+            [JsonProperty(PropertyName = "userid")]
+            public string UserId;
         }
     }
 }
