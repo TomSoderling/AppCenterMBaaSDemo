@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using AppCenterBaaS.Models;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -50,60 +53,46 @@ namespace AppCenterBaaS.ViewModels
 
 
         const string accountURL = @"https://cosmos-db-demo-app-1.documents.azure.com:443/";
-        const string accountKey = @"TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
-        const string databaseId = @"ToDoList";
-        const string collectionId = @"Items";
+        const string accountKey = "TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
+        const string databaseId = "DemoAppDB";
+        const string containerId = "Contacts";
+        const string partitionKey = "/userId";
         public CosmosClient client;
 
         private async Task GetAllPublicAppDocuments()
         {
-            //StatusMessage = string.Empty;
-            //JsonDoc = string.Empty;
-
-            //try
-            //{
-            //    var paginatedDocs = await Data.ListAsync<object>(DefaultPartitions.AppDocuments);
-
-            //    PublicDocuments.Clear();
-            //    foreach (var doc in paginatedDocs)
-            //    {
-            //        var lastUpdated = $"last updated: {doc.LastUpdatedDate.ToLocalTime().ToString()}";
-            //        PublicDocuments.Add(new Tuple<string, string>(doc.Id, lastUpdated));
-            //    }
-
-            //    StatusMessage = "Documents fetched";
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
-
+            StatusMessage = string.Empty;
+            JsonDoc = string.Empty;
 
             try
             {
                 // Create new CosmosClient to communiciate with Azure Cosmos DB
                 using (var cosmosClient = new CosmosClient(accountURL, accountKey))
                 {
-                    // Create new database
+                    // Connect to or create database
                     var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId);
 
-                    // Create new container
-                    var container = await database.Database.CreateContainerIfNotExistsAsync(collectionId, "/_partitionKey");
+                    // Connect to or create container
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(containerId, partitionKey);
 
                     var sqlQueryText = "SELECT * FROM c";
                     var queryDefinition = new QueryDefinition(sqlQueryText);
-                    var queryResultSetIterator = container.Container.GetItemQueryIterator<TodoItem>(queryDefinition);
+                    var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(queryDefinition);
 
-                    var items = new List<TodoItem>();
+                    if (queryResultSetIterator.HasMoreResults)
+                        PublicDocuments.Clear();
 
                     while (queryResultSetIterator.HasMoreResults)
                     {
                         var currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                        foreach (TodoItem item in currentResultSet)
+                        foreach (var doc in currentResultSet)
                         {
-                            items.Add(item);
+                            var lastUpdated = $"last updated: {doc.LastUpdated}";
+                            PublicDocuments.Add(new Tuple<string, string>(doc.Id.ToString(), lastUpdated));
                         }
                     }
+
+                    StatusMessage = "Documents fetched";
                 }
             }
             catch (Exception ex)
@@ -114,26 +103,43 @@ namespace AppCenterBaaS.ViewModels
 
         private async Task GetPublicAppDocumentByID(object selected)
         {
-            //StatusMessage = string.Empty;
+            if (!(selected is Tuple<string, string> selectedDoc))
+                return;
 
-            //if (!(selected is Tuple<string, string> selectedDoc))
-            //    return;
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(accountURL, accountKey))
+                {
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId);
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(containerId, partitionKey);
 
-            //try
-            //{
-            //    var doc = await Data.ReadAsync<object>(selectedDoc.Item1, DefaultPartitions.AppDocuments);
+                    var sqlQueryText = $"SELECT * FROM c WHERE c.id = '{selectedDoc.Item1}'";
+                    var query = new QueryDefinition(sqlQueryText);
+                    var queryResultSetIterator = container.Container.GetItemQueryStreamIterator(query);
 
-            //    // format the json for display
-            //    var parsedJson = JToken.Parse(doc.JsonValue);
-            //    JsonDoc = parsedJson.ToString(Formatting.Indented);
+                    if (queryResultSetIterator.HasMoreResults)
+                    {
+                        var responseMessage = await queryResultSetIterator.ReadNextAsync();
 
-            //    var cacheOrService = doc.IsFromDeviceCache ? "device cache" : "App Center backend";
-            //    StatusMessage = $"Document fetched from {cacheOrService}";
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
+                        var docAsJson = string.Empty;
+                        using (StreamReader sr = new StreamReader(responseMessage.Content))
+                        {
+                            docAsJson = sr.ReadToEnd();
+                        }
+
+                        // format as json for display
+                        var parsedJson = JToken.Parse(docAsJson);
+                        JsonDoc = parsedJson.ToString(Formatting.Indented);
+                    }
+
+                    StatusMessage = $"Document {selectedDoc.Item1} fetched";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
         }
 
 
@@ -142,23 +148,6 @@ namespace AppCenterBaaS.ViewModels
         protected virtual void NotifyPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
-
-
-        public class TodoItem
-        {
-            [JsonProperty(PropertyName = "id")]
-            public string Id { get; set; }
-
-            [JsonProperty(PropertyName = "text")]
-            public string Text { get; set; }
-
-            [JsonProperty(PropertyName = "complete")]
-            public bool Complete { get; set; }
-
-            [JsonProperty(PropertyName = "userid")]
-            public string UserId;
         }
     }
 }

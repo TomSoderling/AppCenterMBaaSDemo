@@ -1,10 +1,11 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:AppCenterBaaS"
-             xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
-             x:Class="AppCenterBaaS.Pages.PublicDocumentsPage"
-             BackgroundColor="#FFFF66">
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage
+    x:Class="AppCenterBaaS.Pages.PublicDocumentsPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:AppCenterBaaS"
+    xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
+    BackgroundColor="#FFFF66">
 
     <ContentPage.BindingContext>
         <vm:PublicDocumentsPageViewModel />
@@ -18,34 +19,38 @@
 
     <ContentPage.Content>
 
-        <ListView BackgroundColor="#FFFF66"
-                  ItemsSource="{Binding PublicDocuments}">
+        <ListView
+            BackgroundColor="#FFFF66"
+            ItemSelected="ListView_ItemSelected"
+            ItemsSource="{Binding PublicDocuments}">
             <ListView.Header>
                 <StackLayout VerticalOptions="Center">
-                    <Button Text="Get public AppDocuments"
-                            BackgroundColor="Blue"
-                            TextColor="White"
-                            Margin="10, 15, 10, 0"
-                            VerticalOptions="Center"
-                            Command="{Binding GetAllPublicAppDocumentsCommand}" />
-                    <Editor Text="{Binding JsonDoc}"
-                            AutoSize="TextChanges"
-                            IsReadOnly="True"
-                            Margin="10, 0, 10, 0" />
-                    <Label Text="{Binding StatusMessage}"
-                           Margin="10, 0, 10, 5" />
+                    <Button
+                        Margin="10,15,10,0"
+                        BackgroundColor="Blue"
+                        Command="{Binding GetAllPublicAppDocumentsCommand}"
+                        Text="Get public AppDocuments"
+                        TextColor="White"
+                        VerticalOptions="Center" />
+                    <Editor
+                        Margin="10,0"
+                        AutoSize="TextChanges"
+                        FontSize="Small"
+                        Text="{Binding JsonDoc}" />
+                    <Label Margin="10,0,10,5" Text="{Binding StatusMessage}" />
                 </StackLayout>
             </ListView.Header>
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <TextCell Text="{Binding Item1}" Detail="{Binding Item2}" />
+                    <TextCell Detail="{Binding Item2}" Text="{Binding Item1}" />
                 </DataTemplate>
             </ListView.ItemTemplate>
 
             <ListView.Behaviors>
-                <local:EventToCommandBehavior EventName="ItemSelected"
-                                              Command="{Binding GetPublicAppDocumentCommand}"
-                                              Converter="{StaticResource SelectedItemConverter}" />
+                <local:EventToCommandBehavior
+                    Command="{Binding GetPublicAppDocumentCommand}"
+                    Converter="{StaticResource SelectedItemConverter}"
+                    EventName="ItemSelected" />
             </ListView.Behaviors>
         </ListView>
 
