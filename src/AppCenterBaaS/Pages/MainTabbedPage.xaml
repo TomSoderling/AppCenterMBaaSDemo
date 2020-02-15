@@ -1,9 +1,10 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<TabbedPage xmlns="http://xamarin.com/schemas/2014/forms"
-            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-            xmlns:pages="clr-namespace:AppCenterBaaS.Pages"
-            x:Class="AppCenterBaaS.Pages.MainTabbedPage">
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<TabbedPage
+    x:Class="AppCenterBaaS.Pages.MainTabbedPage"
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:AppCenterBaaS.Pages">
     <pages:AuthPage Title="Auth" />
     <pages:PublicDocumentsPage Title="Public Docs" />
-    <pages:UsersPage Title="User Docs" />
+    <pages:ContactsPage Title="User Docs" />
 </TabbedPage>

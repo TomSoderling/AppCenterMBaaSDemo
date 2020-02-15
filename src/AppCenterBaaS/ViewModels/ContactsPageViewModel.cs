@@ -1,9 +1,14 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AppCenterBaaS.Models;
+using Microsoft.Azure.Cosmos;
+using Xamarin.Essentials;
 using Xamarin.Forms;
 
 namespace AppCenterBaaS.ViewModels
@@ -13,10 +18,10 @@ namespace AppCenterBaaS.ViewModels
         public ContactsPageViewModel()
         {
             GetUserDocumentsCommand = new Command(async () => await GetListOfUserDocuments());
-            GetUserDocumentCommand = new Command<User>(async (User user) => await GetUserByID(user));
+            GetUserDocumentCommand = new Command<Contact>(async (Contact contact) => await GetContactByID(contact));
             CreateNewContactCommand = new Command(async () => await CreateNewContact());
             UpsertContactCommand = new Command(async () => await UpsertContect());
-            DeleteContactCommand = new Command<User>(async (User user) => await DeleteContact(user));
+            DeleteContactCommand = new Command<Contact>(async (Contact contact) => await DeleteContact(contact));
 
 
             // Get notified of a pending operation being executed when the device goes from offline to online
@@ -31,7 +36,7 @@ namespace AppCenterBaaS.ViewModels
             //};
         }
 
-        private User lastSelectedUser;
+        //private User lastSelectedUser;
 
         private string name;
         public string Name
@@ -94,12 +99,12 @@ namespace AppCenterBaaS.ViewModels
         public ICommand UpsertContactCommand { get; private set; }
         public ICommand DeleteContactCommand { get; private set; }
 
-        public ObservableCollection<User> UserDocuments { get; set; } = new ObservableCollection<User>();
+        public ObservableCollection<Contact> Contacts { get; set; } = new ObservableCollection<Contact>();
 
 
         private async Task CreateNewContact()
         {
-            //StatusMessage = string.Empty;
+            StatusMessage = string.Empty;
 
             //var user = new User(Name, Email, PhoneNumber);
 
@@ -125,9 +130,44 @@ namespace AppCenterBaaS.ViewModels
             //{
             //    StatusMessage = ex.Message;
             //}
+
+            var newContact = new Contact
+            {
+                Name = Name,
+                Email = Email,
+                PhoneNumber = PhoneNumber,
+                Notes = Notes
+            };
+
+            try
+            {
+                using (var cosmosClient = new CosmosClient(PublicDocumentsPageViewModel.accountURL, PublicDocumentsPageViewModel.accountKey))
+                {
+                    var databaseResp = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
+                    var containerResp = await databaseResp.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
+
+                    var accountID = Preferences.Get("accountID", string.Empty); // get account ID from app preferences
+                    newContact.UserId = accountID;
+
+                    var response = await containerResp.Container.CreateItemAsync(newContact, new PartitionKey(accountID));
+
+                    StatusMessage = $"Document created with ID: {response.Resource.Id}. Operation consumed {response.RequestCharge} RUs";
+                }
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.Conflict)
+                    StatusMessage = $"Document in database with ID: {newContact.Id} already exists";
+                else
+                    StatusMessage = $"Error creating document: {ex.Message}";
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Error creating document: {ex.Message}";
+            }
         }
 
-        private async Task GetUserByID(User user)
+        private async Task GetContactByID(Contact contact)
         {
             //StatusMessage = string.Empty;
             //Name = Email = PhoneNumber = string.Empty;
@@ -181,6 +221,41 @@ namespace AppCenterBaaS.ViewModels
             //{
             //    StatusMessage = ex.Message;
             //}
+
+
+            StatusMessage = "Fetching documents...";
+
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(PublicDocumentsPageViewModel.accountURL, PublicDocumentsPageViewModel.accountKey))
+                {
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
+
+                    var sqlQueryText = "SELECT * FROM c";
+                    var queryDefinition = new QueryDefinition(sqlQueryText);
+                    var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(queryDefinition);
+
+                    if (queryResultSetIterator.HasMoreResults)
+                        Contacts.Clear();
+
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (var doc in currentResultSet)
+                        {
+                            Contacts.Add(doc);
+                        }
+                    }
+
+                    StatusMessage = "Documents fetched";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
         }
 
         private async Task UpsertContect()
@@ -210,7 +285,7 @@ namespace AppCenterBaaS.ViewModels
             //}
         }
 
-        private async Task DeleteContact(User selectedUser)
+        private async Task DeleteContact(Contact selectedContact)
         {
             //StatusMessage = string.Empty;
 

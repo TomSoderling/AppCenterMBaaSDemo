@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage
-    x:Class="AppCenterBaaS.Pages.UsersPage"
+    x:Class="AppCenterBaaS.Pages.ContactsPage"
     xmlns="http://xamarin.com/schemas/2014/forms"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:AppCenterBaaS"
     xmlns:vm="clr-namespace:AppCenterBaaS.ViewModels"
-    x:Name="contentPage"
+    x:Name="contactsPage"
     BackgroundColor="LimeGreen">
 
     <ContentPage.BindingContext>
@@ -24,7 +24,7 @@
     </ContentPage.Resources>
 
     <ContentPage.Content>
-        <ListView BackgroundColor="LimeGreen" ItemsSource="{Binding UserDocuments}">
+        <ListView BackgroundColor="LimeGreen" ItemsSource="{Binding Contacts}">
             <ListView.Header>
                 <StackLayout>
                     <Label Margin="10,10,10,0" Text="Contact Information" />
@@ -64,7 +64,7 @@
                             Grid.Column="0"
                             Margin="10,5,5,0"
                             BackgroundColor="Blue"
-                            Command="{Binding CreateNewUserCommand}"
+                            Command="{Binding CreateNewContactCommand}"
                             Text="Create new Contact"
                             TextColor="White" />
 
@@ -73,7 +73,7 @@
                             Grid.Column="1"
                             Margin="5,5,10,0"
                             BackgroundColor="Blue"
-                            Command="{Binding UpsertUserCommand}"
+                            Command="{Binding UpsertContactCommand}"
                             Text="Upsert Contact"
                             TextColor="White" />
 
@@ -96,7 +96,7 @@
                     <TextCell Detail="{Binding PhoneNumber}" Text="{Binding Name}">
                         <TextCell.ContextActions>
                             <MenuItem
-                                Command="{Binding Source={x:Reference contentPage}, Path=BindingContext.DeleteUserCommand}"
+                                Command="{Binding Source={x:Reference contactsPage}, Path=BindingContext.DeleteUserCommand}"
                                 CommandParameter="{Binding .}"
                                 IsDestructive="True"
                                 Text="Delete" />

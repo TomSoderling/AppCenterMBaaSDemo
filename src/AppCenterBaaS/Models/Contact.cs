@@ -27,6 +27,10 @@ namespace AppCenterBaaS.Models
         [JsonProperty(PropertyName = "_ts")]
         public long TimeStamp { get; set; }
 
+        [JsonProperty(PropertyName = "userId")]
+        public string UserId { get; set; }
+
+
         [JsonIgnore]
         public DateTime LastUpdated
         {

@@ -52,12 +52,12 @@ namespace AppCenterBaaS.ViewModels
         public ObservableCollection<Tuple<string, string>> PublicDocuments { get; set; } = new ObservableCollection<Tuple<string, string>>();
 
 
-        const string accountURL = @"https://cosmos-db-demo-app-1.documents.azure.com:443/";
-        const string accountKey = "TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
-        const string databaseId = "DemoAppDB";
-        const string containerId = "Contacts";
-        const string partitionKey = "/userId";
-        public CosmosClient client;
+        public const string accountURL = @"https://cosmos-db-demo-app-1.documents.azure.com:443/";
+        // This is the master key. In practice, you would NOT want to bundle this with your app and give every user this level of access
+        public const string accountKey = "TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
+        public const string databaseId = "DemoAppDB";
+        public const string containerId = "Contacts";
+        public const string partitionKey = "/userId";
 
         private async Task GetAllPublicAppDocuments()
         {

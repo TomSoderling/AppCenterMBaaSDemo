@@ -3,9 +3,9 @@ using System;
 
 namespace AppCenterBaaS.Pages
 {
-    public partial class UsersPage : ContentPage
+    public partial class ContactsPage : ContentPage
     {
-        public UsersPage()
+        public ContactsPage()
         {
             InitializeComponent();
         }
