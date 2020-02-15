@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -11,15 +8,15 @@ using Xamarin.Forms;
 
 namespace AppCenterBaaS.ViewModels
 {
-    public class UsersPageViewModel : INotifyPropertyChanged
+    public class ContactsPageViewModel : INotifyPropertyChanged
     {
-        public UsersPageViewModel()
+        public ContactsPageViewModel()
         {
-            CreateNewUserCommand = new Command(async () => await CreateNewUser());
             GetUserDocumentsCommand = new Command(async () => await GetListOfUserDocuments());
             GetUserDocumentCommand = new Command<User>(async (User user) => await GetUserByID(user));
-            UpsertUserCommand = new Command(async () => await UpsertUser());
-            DeleteUserCommand = new Command<User>(async (User user) => await DeleteUser(user));
+            CreateNewContactCommand = new Command(async () => await CreateNewContact());
+            UpsertContactCommand = new Command(async () => await UpsertContect());
+            DeleteContactCommand = new Command<User>(async (User user) => await DeleteContact(user));
 
 
             // Get notified of a pending operation being executed when the device goes from offline to online
@@ -69,6 +66,17 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
+        private string notes;
+        public string Notes
+        {
+            get => notes;
+            set
+            {
+                notes = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private string statusMessage;
         public string StatusMessage
         {
@@ -80,16 +88,16 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
-        public ICommand CreateNewUserCommand { get; private set; }
+        public ICommand CreateNewContactCommand { get; private set; }
         public ICommand GetUserDocumentsCommand { get; private set; }
         public ICommand GetUserDocumentCommand { get; private set; }
-        public ICommand UpsertUserCommand { get; private set; }
-        public ICommand DeleteUserCommand { get; private set; }
+        public ICommand UpsertContactCommand { get; private set; }
+        public ICommand DeleteContactCommand { get; private set; }
 
         public ObservableCollection<User> UserDocuments { get; set; } = new ObservableCollection<User>();
 
 
-        private async Task CreateNewUser()
+        private async Task CreateNewContact()
         {
             //StatusMessage = string.Empty;
 
@@ -175,7 +183,7 @@ namespace AppCenterBaaS.ViewModels
             //}
         }
 
-        private async Task UpsertUser()
+        private async Task UpsertContect()
         {
             //StatusMessage = string.Empty;
 
@@ -202,7 +210,7 @@ namespace AppCenterBaaS.ViewModels
             //}
         }
 
-        private async Task DeleteUser(User selectedUser)
+        private async Task DeleteContact(User selectedUser)
         {
             //StatusMessage = string.Empty;
 

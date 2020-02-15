@@ -61,7 +61,7 @@ namespace AppCenterBaaS.ViewModels
 
         private async Task GetAllPublicAppDocuments()
         {
-            StatusMessage = string.Empty;
+            StatusMessage = "Fetching documents...";
             JsonDoc = string.Empty;
 
             try
@@ -106,6 +106,8 @@ namespace AppCenterBaaS.ViewModels
             if (!(selected is Tuple<string, string> selectedDoc))
                 return;
 
+            StatusMessage = $"Fetching document ...{selectedDoc.Item1.Substring(selectedDoc.Item1.Length - 5, 5)}...";
+
             try
             {
                 // Create new CosmosClient to communiciate with Azure Cosmos DB
@@ -133,7 +135,7 @@ namespace AppCenterBaaS.ViewModels
                         JsonDoc = parsedJson.ToString(Formatting.Indented);
                     }
 
-                    StatusMessage = $"Document {selectedDoc.Item1} fetched";
+                    StatusMessage = $"Document ...{selectedDoc.Item1.Substring(selectedDoc.Item1.Length - 5, 5)} fetched";
                 }
             }
             catch (Exception ex)
