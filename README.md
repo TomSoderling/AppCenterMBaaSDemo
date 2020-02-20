@@ -4,6 +4,7 @@ Demo Xamarin.Forms app showing the power of Azure AD B2C & Cosmos DB to build a 
 
 See repo for slides that go along with the app
 
+<img src="images/AppScreenshots.png" width="1000">
 
 
 ## Using this sample app
