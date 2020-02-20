@@ -96,7 +96,7 @@
                     <TextCell Detail="{Binding PhoneNumber}" Text="{Binding Name}">
                         <TextCell.ContextActions>
                             <MenuItem
-                                Command="{Binding Source={x:Reference contactsPage}, Path=BindingContext.DeleteUserCommand}"
+                                Command="{Binding Source={x:Reference contactsPage}, Path=BindingContext.DeleteContactCommand}"
                                 CommandParameter="{Binding .}"
                                 IsDestructive="True"
                                 Text="Delete" />

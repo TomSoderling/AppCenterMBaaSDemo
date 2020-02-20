@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using AppCenterBaaS.Models;
@@ -36,7 +36,10 @@ namespace AppCenterBaaS.ViewModels
             //};
         }
 
-        //private User lastSelectedUser;
+        private Contact lastSelectedContact;
+
+
+        #region Properties
 
         private string name;
         public string Name
@@ -93,6 +96,18 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
+        private string jsonDoc;
+        public string JsonDoc
+        {
+            get => jsonDoc;
+            set
+            {
+                jsonDoc = value;
+                NotifyPropertyChanged();
+            }
+        }
+
+
         public ICommand CreateNewContactCommand { get; private set; }
         public ICommand GetUserDocumentsCommand { get; private set; }
         public ICommand GetUserDocumentCommand { get; private set; }
@@ -101,35 +116,93 @@ namespace AppCenterBaaS.ViewModels
 
         public ObservableCollection<Contact> Contacts { get; set; } = new ObservableCollection<Contact>();
 
+        #endregion Properties
+
+
+        private async Task GetListOfUserDocuments()
+        {
+            StatusMessage = "Fetching documents...";
+
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(PublicDocumentsPageViewModel.accountURL, PublicDocumentsPageViewModel.accountKey))
+                {
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
+
+                    var sqlQueryText = "SELECT * FROM c";
+                    var queryDefinition = new QueryDefinition(sqlQueryText);
+                    var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(queryDefinition);
+
+                    if (queryResultSetIterator.HasMoreResults)
+                        Contacts.Clear();
+
+                    var accountID = Preferences.Get("accountID", string.Empty); // get account ID from app preferences
+
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                        foreach (var doc in currentResultSet)
+                        {
+                            if (doc.UserId == accountID) // TODO: shouldn't have to filter these. Use resource token to just get the user's documents.
+                                Contacts.Add(doc);
+                        }
+                    }
+
+                    StatusMessage = "Documents fetched";
+                    Name = Email = PhoneNumber = Notes = string.Empty;
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
+
+        private async Task GetContactByID(Contact contact)
+        {
+            StatusMessage = $"Fetching document ...{contact.Id.ToString().Substring(contact.Id.ToString().Length - 5, 5)}...";
+
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(PublicDocumentsPageViewModel.accountURL, PublicDocumentsPageViewModel.accountKey))
+                {
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
+
+                    var sqlQueryText = $"SELECT * FROM c WHERE c.id = '{contact.Id}'";
+                    var query = new QueryDefinition(sqlQueryText);
+                    var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(query);
+
+                    while (queryResultSetIterator.HasMoreResults)
+                    {
+                        FeedResponse<Contact> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+
+                        var selectedContact = currentResultSet.First();
+                        
+                        // populate text fields so the values can be changed
+                        Name = selectedContact.Name;
+                        Email = selectedContact.Email;
+                        PhoneNumber = selectedContact.PhoneNumber;
+                        Notes = selectedContact.Notes;
+
+                        lastSelectedContact = selectedContact;
+                    }
+
+                    StatusMessage = $"Document ...{contact.Id.ToString().Substring(contact.Id.ToString().Length - 5, 5)} fetched";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
+        }
 
         private async Task CreateNewContact()
         {
             StatusMessage = string.Empty;
-
-            //var user = new User(Name, Email, PhoneNumber);
-
-            //try
-            //{
-            //    // Optional time-to-live parameter. Locally cached documents will expire afte 60 seconds.
-            //    var ttl = new TimeSpan(0, 0, 60, 0);
-
-            //    var doc = await Data.CreateAsync(user.Id.ToString(), user, DefaultPartitions.UserDocuments, new WriteOptions(ttl));
-
-            //    if (doc.IsFromDeviceCache)
-            //    {
-            //        StatusMessage = $"User created in device cache. TTL: {ttl.Seconds} seconds. ID: {doc.Id}";
-            //    }
-            //    else
-            //    {
-            //        StatusMessage = $"User created in App Center backend. ID: {doc.Id}";
-            //    }
-
-            //    Name = Email = PhoneNumber = string.Empty;
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
 
             var newContact = new Contact
             {
@@ -167,63 +240,15 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
-        private async Task GetContactByID(Contact contact)
+        private async Task UpsertContect()
         {
-            //StatusMessage = string.Empty;
-            //Name = Email = PhoneNumber = string.Empty;
+            StatusMessage = $"Upserting document ...{lastSelectedContact.Id.ToString().Substring(lastSelectedContact.Id.ToString().Length - 5, 5)}...";
 
-            //try
-            //{
-            //    var fetchedUser = await Data.ReadAsync<User>(user.Id.ToString(), DefaultPartitions.UserDocuments);
-
-            //    StatusMessage = $"User fetched from {CacheOrService(fetchedUser)}: \n{fetchedUser.DeserializedValue.Id} \n{fetchedUser.LastUpdatedDate.ToLocalTime()}";
-
-            //    // populate text fields so the values can be changed
-            //    lastSelectedUser = fetchedUser.DeserializedValue;
-            //    Name = fetchedUser.DeserializedValue.Name;
-            //    Email = fetchedUser.DeserializedValue.Email;
-            //    PhoneNumber = fetchedUser.DeserializedValue.PhoneNumber;
-            //}
-            //catch (DataException dex)
-            //{
-            //    StatusMessage = dex.InnerException?.Message;
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
-        }
-
-        private async Task GetListOfUserDocuments()
-        {
-            //StatusMessage = string.Empty;
-            //Name = Email = PhoneNumber = string.Empty;
-
-            //try
-            //{
-            //    var paginatedDocs = await Data.ListAsync<User>(DefaultPartitions.UserDocuments); // get the currently authenticated user's documents
-
-            //    UserDocuments.Clear();
-            //    var pageOfDocs = new List<User>();
-            //    pageOfDocs.AddRange(paginatedDocs.CurrentPage.Items.Select(d => d.DeserializedValue));
-
-            //    // Add to ObservableCollection
-            //    foreach (var user in pageOfDocs)
-            //        UserDocuments.Add(user);
-
-            //    StatusMessage = $"Documents fetched from {CacheOrService(paginatedDocs.First())}";
-            //}
-            //catch (DataException dex)
-            //{
-            //    StatusMessage = dex.InnerException?.Message;
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
-
-
-            StatusMessage = "Fetching documents...";
+            // update any values the user may have changed
+            lastSelectedContact.Name = Name;
+            lastSelectedContact.Email = Email;
+            lastSelectedContact.PhoneNumber = PhoneNumber;
+            lastSelectedContact.Notes = Notes;
 
             try
             {
@@ -233,23 +258,12 @@ namespace AppCenterBaaS.ViewModels
                     var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
                     var container = await database.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
 
-                    var sqlQueryText = "SELECT * FROM c";
-                    var queryDefinition = new QueryDefinition(sqlQueryText);
-                    var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(queryDefinition);
+                    var itemResponse = await container.Container.UpsertItemAsync<Contact>(lastSelectedContact, new PartitionKey(lastSelectedContact.UserId));
 
-                    if (queryResultSetIterator.HasMoreResults)
-                        Contacts.Clear();
-
-                    while (queryResultSetIterator.HasMoreResults)
-                    {
-                        var currentResultSet = await queryResultSetIterator.ReadNextAsync();
-                        foreach (var doc in currentResultSet)
-                        {
-                            Contacts.Add(doc);
-                        }
-                    }
-
-                    StatusMessage = "Documents fetched";
+                    if (itemResponse.StatusCode == HttpStatusCode.OK)
+                        StatusMessage = $"Document ...{lastSelectedContact.Id.ToString().Substring(lastSelectedContact.Id.ToString().Length - 5, 5)} upserted. Operation consumed {itemResponse.RequestCharge} RUs";
+                    else
+                        statusMessage = $"Something went wrong upserting document {lastSelectedContact.Id}";
                 }
             }
             catch (Exception ex)
@@ -258,58 +272,34 @@ namespace AppCenterBaaS.ViewModels
             }
         }
 
-        private async Task UpsertContect()
-        {
-            //StatusMessage = string.Empty;
-
-            //try
-            //{
-            //    // update any values the user may have changed
-            //    lastSelectedUser.Name = Name;
-            //    lastSelectedUser.Email = Email;
-            //    lastSelectedUser.PhoneNumber = PhoneNumber;
-
-            //    var upsertedUser = await Data.ReplaceAsync<User>(lastSelectedUser.Id.ToString(), lastSelectedUser, DefaultPartitions.UserDocuments);
-
-            //    StatusMessage = $"User upserted to {CacheOrService(upsertedUser)} \n{upsertedUser.DeserializedValue.Id} \n{upsertedUser.LastUpdatedDate.ToLocalTime()}";
-
-            //    Name = Email = PhoneNumber = string.Empty;
-            //}
-            //catch (DataException dex)
-            //{
-            //    StatusMessage = dex.InnerException?.Message;
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
-        }
-
         private async Task DeleteContact(Contact selectedContact)
         {
-            //StatusMessage = string.Empty;
+            StatusMessage = $"Deleting document ...{selectedContact.Id.ToString().Substring(selectedContact.Id.ToString().Length - 5, 5)}...";
 
-            //try
-            //{
-            //    var result = await Data.DeleteAsync<User>(selectedUser.Id.ToString(), DefaultPartitions.UserDocuments);
+            try
+            {
+                // Create new CosmosClient to communiciate with Azure Cosmos DB
+                using (var cosmosClient = new CosmosClient(PublicDocumentsPageViewModel.accountURL, PublicDocumentsPageViewModel.accountKey))
+                {
+                    var database = await cosmosClient.CreateDatabaseIfNotExistsAsync(PublicDocumentsPageViewModel.databaseId);
+                    var container = await database.Database.CreateContainerIfNotExistsAsync(PublicDocumentsPageViewModel.containerId, PublicDocumentsPageViewModel.partitionKey);
 
-            //    StatusMessage = $"User deleted in {CacheOrService(result)}";
-            //    Name = Email = PhoneNumber = string.Empty;
-            //}
-            //catch (DataException dex)
-            //{
-            //    StatusMessage = dex.InnerException?.Message;
-            //}
-            //catch (Exception ex)
-            //{
-            //    StatusMessage = ex.Message;
-            //}
+                    var itemResponse = await container.Container.DeleteItemAsync<Contact>(selectedContact.Id.ToString(), new PartitionKey(selectedContact.UserId));
+
+                    if (itemResponse.StatusCode == HttpStatusCode.NoContent)
+                    {
+                        StatusMessage = $"Document ...{selectedContact.Id.ToString().Substring(selectedContact.Id.ToString().Length - 5, 5)} deleted. Operation consumed {itemResponse.RequestCharge} RUs";
+                        Name = Email = PhoneNumber = Notes = string.Empty;
+                    }
+                    else
+                        statusMessage = $"Something went wrong deleting document {selectedContact.Id}";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.Message;
+            }
         }
-
-        //private string CacheOrService(DocumentWrapper<User> userDoc)
-        //{
-        //    return userDoc.IsFromDeviceCache ? "device cache" : "App Center backend";
-        //}
 
 
         public event PropertyChangedEventHandler PropertyChanged;

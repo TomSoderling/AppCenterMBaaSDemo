@@ -112,7 +112,8 @@ namespace AppCenterBaaS.ViewModels
 
                 try
                 {
-                    // First, try to get a previously cached token
+                    // First, try to use a previously cached token. Once MSAL.NET has acquired a user token, it caches it. Next time the application wants a token,
+                    // it should first call AcquireTokenSilent() to verify if an acceptable token is in the cache, can be refreshed, or can get derived.
                     authResult = await App.PCA.AcquireTokenSilent(App.Scopes, accounts.FirstOrDefault()).ExecuteAsync();
                 }
                 catch (MsalUiRequiredException ex)

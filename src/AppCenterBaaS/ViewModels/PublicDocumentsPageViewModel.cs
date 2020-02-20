@@ -53,11 +53,14 @@ namespace AppCenterBaaS.ViewModels
 
 
         public const string accountURL = @"https://cosmos-db-demo-app-1.documents.azure.com:443/";
+
         // This is the master key. In practice, you would NOT want to bundle this with your app and give every user this level of access
+        // Use a resource broker to issue resource tokens instead
         public const string accountKey = "TNKoJ4biqCXWWC1jjoRlrM4c056t5M5oKDpzkVRRvwyTBhXcdW701lZ31PSvV6GFTjucqc0hgvxaMg0OMWW7yg==";
         public const string databaseId = "DemoAppDB";
         public const string containerId = "Contacts";
         public const string partitionKey = "/userId";
+
 
         private async Task GetAllPublicAppDocuments()
         {
@@ -75,7 +78,7 @@ namespace AppCenterBaaS.ViewModels
                     // Connect to or create container
                     var container = await database.Database.CreateContainerIfNotExistsAsync(containerId, partitionKey);
 
-                    var sqlQueryText = "SELECT * FROM c";
+                    var sqlQueryText = "SELECT * FROM c"; 
                     var queryDefinition = new QueryDefinition(sqlQueryText);
                     var queryResultSetIterator = container.Container.GetItemQueryIterator<Contact>(queryDefinition);
 
@@ -87,8 +90,11 @@ namespace AppCenterBaaS.ViewModels
                         var currentResultSet = await queryResultSetIterator.ReadNextAsync();
                         foreach (var doc in currentResultSet)
                         {
-                            var lastUpdated = $"last updated: {doc.LastUpdated}";
-                            PublicDocuments.Add(new Tuple<string, string>(doc.Id.ToString(), lastUpdated));
+                            if (string.IsNullOrWhiteSpace(doc.UserId)) // TODO: shouldn't have to filter these. Use resource token to just get public documents.
+                            {
+                                var lastUpdated = $"last updated: {doc.LastUpdated}";
+                                PublicDocuments.Add(new Tuple<string, string>(doc.Id.ToString(), lastUpdated));
+                            }
                         }
                     }
 
@@ -133,9 +139,9 @@ namespace AppCenterBaaS.ViewModels
                         // format as json for display
                         var parsedJson = JToken.Parse(docAsJson);
                         JsonDoc = parsedJson.ToString(Formatting.Indented);
-                    }
 
-                    StatusMessage = $"Document ...{selectedDoc.Item1.Substring(selectedDoc.Item1.Length - 5, 5)} fetched";
+                        StatusMessage = $"Document ...{selectedDoc.Item1.Substring(selectedDoc.Item1.Length - 5, 5)} fetched";
+                    }
                 }
             }
             catch (Exception ex)
